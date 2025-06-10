@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teleprompter</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    #script {
+      padding: 100px 80px 100px 80px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      transform: scaleX(-1);
+    }
+
+    .highlight {
+      background-color: yellow;
+      color: black;
+      padding: 0 5px;
+    }
+
+    #container {
+      overflow-y: scroll;
+      height: 100vh;
+      scroll-behavior: smooth;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button onclick="toggleScroll()">▶️ Play/Pause</button>
+    <button onclick="flipText()">🔁 Mirror</button>
+    <button onclick="toggleFullScreen()">⛶ Fullscreen</button>
+    <label>Font Size <input type="range" min="20" max="200" value="60" id="fontSizeSlider" /></label>
+    <label>Speed <input type="range" min="1" max="20" value="2" id="speedSlider" /></label>
+    <button onclick="jumpToTop()">⬆️ Top</button>
+    <button onclick="highlightSelection()">🔲 Highlight</button>
+    <button onclick="removeHighlight()">❌ Remove Highlight</button>
+    <button onclick="nextHighlight()">➡️ Next Highlight</button>
+    <input type="file" id="uploadFile" accept=".txt,.pdf" />
+  </div>
+
+  <div id="container">
+    <div id="script" contenteditable="true">
+      Paste or type your script here...
+    </div>
+  </div>
+
+  <script>
+    let scrolling = false;
+    let scrollSpeed = 2;
+    const container = document.getElementById('container');
+    const script = document.getElementById('script');
+
+    function toggleScroll() {
+      scrolling = !scrolling;
+    }
+
+    function scrollStep() {
+      if (scrolling) container.scrollTop += scrollSpeed;
+      requestAnimationFrame(scrollStep);
+    }
+
+    scrollStep();
+
+    document.getElementById('fontSizeSlider').addEventListener('input', (e) => {
+      script.style.fontSize = e.target.value + 'px';
+    });
+
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      scrollSpeed = parseInt(e.target.value);
+    });
+
+    function flipText() {
+      script.style.transform = script.style.transform === 'scaleX(-1)' ? 'scaleX(1)' : 'scaleX(-1)';
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(console.log);
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function jumpToTop() {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function highlightSelection() {
+      const selection = window.getSelection();
+      if (selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = 'highlight';
+        range.surroundContents(span);
+      }
+    }
+
+    function removeHighlight() {
+      const selection = window.getSelection();
+      if (selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const parent = selection.anchorNode.parentElement;
+        if (parent.classList.contains('highlight')) {
+          const text = parent.textContent;
+          parent.replaceWith(document.createTextNode(text));
+        }
+      }
+    }
+
+    function nextHighlight() {
+      const highlights = [...script.querySelectorAll('.highlight')];
+      const scrollTop = container.scrollTop;
+      for (let el of highlights) {
+        if (el.offsetTop > scrollTop + 10) {
+          container.scrollTo({ top: el.offsetTop - 60, behavior: 'smooth' });
+          break;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
