@@ -17,28 +17,34 @@
       top: 0;
       left: 0;
       width: 100%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.85);
       padding: 10px;
       display: flex;
       justify-content: space-between;
-      z-index: 999;
+      z-index: 9999;
     }
     #script {
-      padding: 80px 60px 60px 60px;
+      padding: 100px 80px 60px 80px;
       max-width: 1000px;
       margin: auto;
-      transform: scaleX(-1);
       white-space: pre-wrap;
       outline: none;
+      transform: scaleX(-1); /* Mirror mode */
     }
     .hidden {
-      display: none;
+      display: none !important;
     }
-    .highlight {
-      background-color: yellow;
-      color: black;
-      padding: 0 4px;
-      border-radius: 4px;
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #555;
     }
   </style>
 </head>
@@ -47,12 +53,14 @@
     <button onclick="togglePlay()">▶️ / ⏸️</button>
     <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
   </div>
-  <div id="script" contenteditable="true">Type or paste your script here...</div>
+
+  <div id="script" contenteditable="true">Paste your teleprompter script here...</div>
 
   <script>
-    let script = document.getElementById("script");
+    const script = document.getElementById("script");
+    const controls = document.getElementById("controls");
     let isPlaying = false;
-    let scrollSpeed = 1.5;
+    let scrollSpeed = 2;
     let fontSize = 48;
     let scrollInterval;
 
@@ -68,13 +76,14 @@
     }
 
     function toggleFullscreen() {
-      if (!document.fullscreenElement) {
+      const isFull = !!document.fullscreenElement;
+      if (!isFull) {
         document.documentElement.requestFullscreen().then(() => {
-          document.getElementById("controls").classList.add("hidden");
+          controls.classList.add("hidden");
         });
       } else {
         document.exitFullscreen().then(() => {
-          document.getElementById("controls").classList.remove("hidden");
+          controls.classList.remove("hidden");
         });
       }
     }
