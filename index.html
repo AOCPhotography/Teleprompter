@@ -20,31 +20,34 @@
       background: rgba(0,0,0,0.85);
       padding: 10px;
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
       z-index: 9999;
     }
     #script {
-      padding: 100px 80px 60px 80px;
+      padding: 120px 80px 60px 80px;
       max-width: 1000px;
       margin: auto;
       white-space: pre-wrap;
       outline: none;
-      transform: scaleX(-1); /* Mirror mode */
+      transform: scaleX(-1);
     }
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
     button {
-      font-size: 16px;
-      padding: 10px 20px;
+      font-size: 14px;
+      padding: 6px 12px;
       background-color: #333;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #555;
+    button:hover { background-color: #555; }
+    .highlight {
+      background: yellow;
+      color: black;
+      padding: 4px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -52,8 +55,14 @@
   <div id="controls">
     <button onclick="togglePlay()">▶️ / ⏸️</button>
     <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    <button onclick="toggleMirror()">🪞 Toggle Mirror</button>
+    <button onclick="increaseFont()">A+</button>
+    <button onclick="decreaseFont()">A-</button>
+    <button onclick="saveScript()">💾 Save</button>
+    <button onclick="highlightSelected()">✨ Highlight</button>
+    <button onclick="removeHighlight()">❌ Remove Highlight</button>
+    <button onclick="nextHighlight()">➡️ Next Highlight</button>
   </div>
-
   <div id="script" contenteditable="true">Paste your teleprompter script here...</div>
 
   <script>
@@ -63,6 +72,7 @@
     let scrollSpeed = 2;
     let fontSize = 48;
     let scrollInterval;
+    let mirrored = true;
 
     function togglePlay() {
       isPlaying = !isPlaying;
@@ -88,26 +98,78 @@
       }
     }
 
+    function toggleMirror() {
+      mirrored = !mirrored;
+      script.style.transform = mirrored ? "scaleX(-1)" : "none";
+    }
+
+    function increaseFont() {
+      fontSize += 4;
+      script.style.fontSize = fontSize + "px";
+    }
+
+    function decreaseFont() {
+      fontSize = Math.max(12, fontSize - 4);
+      script.style.fontSize = fontSize + "px";
+    }
+
+    function highlightSelected() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const span = document.createElement("span");
+      span.className = "highlight";
+      range.surroundContents(span);
+    }
+
+    function removeHighlight() {
+      document.querySelectorAll(".highlight").forEach(span => {
+        const parent = span.parentNode;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+      });
+    }
+
+    function nextHighlight() {
+      const highlights = document.querySelectorAll(".highlight");
+      const currentY = window.scrollY;
+      for (const h of highlights) {
+        const rect = h.getBoundingClientRect();
+        const absTop = rect.top + currentY;
+        if (absTop > currentY + 50) {
+          window.scrollTo({ top: absTop - 100, behavior: 'smooth' });
+          break;
+        }
+      }
+    }
+
+    function saveScript() {
+      const blob = new Blob([script.innerHTML], { type: "text/html" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "teleprompter_script.html";
+      a.click();
+    }
+
     document.addEventListener("keydown", (e) => {
-      if (e.key === "+") {
-        scrollSpeed += 0.5;
-      } else if (e.key === "-") {
-        scrollSpeed = Math.max(0.5, scrollSpeed - 0.5);
-      } else if (e.key === "{") {
-        fontSize = Math.max(12, fontSize - 4);
-        script.style.fontSize = fontSize + "px";
-      } else if (e.key === "}") {
-        fontSize += 4;
-        script.style.fontSize = fontSize + "px";
-      } else if (e.key === "ArrowDown") {
-        window.scrollBy(0, fontSize);
-      } else if (e.key === "ArrowUp") {
-        window.scrollBy(0, -fontSize);
-      } else if (e.key === " ") {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.key === "f" || e.key === "F") {
-        toggleFullscreen();
+      if (e.key === "+") scrollSpeed += 0.5;
+      else if (e.key === "-") scrollSpeed = Math.max(0.5, scrollSpeed - 0.5);
+      else if (e.key === "{") decreaseFont();
+      else if (e.key === "}") increaseFont();
+      else if (e.key === "ArrowDown") window.scrollBy(0, fontSize);
+      else if (e.key === "ArrowUp") window.scrollBy(0, -fontSize);
+      else if (e.key === " ") { e.preventDefault(); togglePlay(); }
+    });
+
+    // Drag & Drop File Reader
+    document.addEventListener("dragover", e => e.preventDefault());
+    document.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("text")) {
+        const reader = new FileReader();
+        reader.onload = () => script.innerText = reader.result;
+        reader.readAsText(file);
       }
     });
   </script>
