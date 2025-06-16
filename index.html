@@ -2,249 +2,239 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Teleprompter Pro</title>
+  <title>Teleprompter</title>
   <style>
     body {
-      background: black;
+      background-color: black;
       color: white;
       margin: 0;
       font-size: 48px;
       font-family: Arial, sans-serif;
       overflow-y: scroll;
     }
+
     #controls {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      background: rgba(0,0,0,0.85);
-      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 8px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
+      z-index: 1000;
       flex-wrap: wrap;
-      gap: 4px;
-      z-index: 9999;
     }
-    .control-button, select {
-      height: 32px;
-      min-width: 32px;
-      font-size: 16px;
-      background: #222;
+
+    .left-controls,
+    .right-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    button, label, select {
+      font-size: 14px;
+      padding: 6px 8px;
+      background-color: #333;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
-    .control-button:hover {
-      background: #444;
-    }
-    .slider {
+
+    input[type="range"] {
       width: 80px;
-      height: 20px;
     }
+
     #script {
-      padding: 120px 80px 60px 80px;
+      padding: 140px 80px 60px 80px;
       max-width: 1000px;
       margin: auto;
       white-space: pre-wrap;
       outline: none;
       transform: scaleX(-1);
     }
-    input[type="file"] {
-      height: 32px;
-      font-size: 14px;
-    }
-    .highlight-grey {
-      background-color: #ccc;
+
+    .highlight {
+      background-color: grey;
       color: black;
     }
-    .highlight-yellow {
-      background-color: yellow;
-      color: black;
+
+    .highlight-yellow { background-color: yellow; color: black; }
+    .highlight-green  { background-color: lime; color: black; }
+    .highlight-blue   { background-color: lightblue; color: black; }
+
+    .hidden {
+      display: none !important;
     }
-    .highlight-blue {
-      background-color: lightblue;
-      color: black;
-    }
-    .highlight-green {
-      background-color: lightgreen;
-      color: black;
-    }
-    .highlight-red {
-      background-color: pink;
-      color: black;
+
+    select {
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
   <div id="controls">
-    <button class="control-button" onclick="saveScript()">💾</button>
-    <input type="file" id="fileInput" accept=".txt" />
-    <button class="control-button" onclick="toggleEdit()">✏️</button>
-    <button class="control-button" onclick="toggleMirror()">🔁</button>
-    <button class="control-button" onclick="highlightSelection('highlight-grey')">⚫</button>
-    <button class="control-button" onclick="highlightSelection('highlight-yellow')">🟨</button>
-    <button class="control-button" onclick="highlightSelection('highlight-blue')">🔵</button>
-    <button class="control-button" onclick="highlightSelection('highlight-green')">🟢</button>
-    <button class="control-button" onclick="highlightSelection('highlight-red')">🔴</button>
-    <button class="control-button" onclick="removeHighlight()">❌</button>
-    <button class="control-button" onclick="jumpToNextHighlight()">⏩</button>
-
-    <select id="fontColor" onchange="changeTextColor()">
-      <option value="">🎨</option>
-      <option value="white">White</option>
-      <option value="black">Black</option>
-      <option value="red">Red</option>
-      <option value="yellow">Yellow</option>
-      <option value="blue">Blue</option>
-      <option value="green">Green</option>
-    </select>
-
-    <select id="fontSize" onchange="changeTextSize()">
-      <option value="">🔠</option>
-      <option value="24px">Small</option>
-      <option value="48px">Medium</option>
-      <option value="72px">Large</option>
-      <option value="96px">X-Large</option>
-    </select>
-
-    <input class="slider" type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="2" />
-    <input class="slider" type="range" id="fontSlider" min="16" max="96" step="2" value="48" />
-
-    <div style="flex: 1;"></div>
-
-    <button class="control-button" onclick="togglePlay()">▶️/⏸️</button>
-    <button class="control-button" onclick="toggleFullscreen()">⛶</button>
+    <div class="left-controls">
+      <button onclick="saveScript()">💾</button>
+      <label for="fileInput">📁</label>
+      <input type="file" id="fileInput" accept=".txt" onchange="loadFile(event)" style="display:none;" />
+      <button onclick="toggleEditMode()">✏️</button>
+      <button onclick="toggleMirror()">🔁</button>
+      <select onchange="highlightText(this.value)">
+        <option value="">🖍️</option>
+        <option value="highlight-yellow">🟨</option>
+        <option value="highlight-green">🟩</option>
+        <option value="highlight-blue">🟦</option>
+      </select>
+      <button onclick="removeHighlight()">❌</button>
+      <button onclick="jumpToNextHighlight()">⏩</button>
+      <input type="range" id="speedSlider" min="0.5" max="10" step="0.1" value="2" title="Speed">
+      <input type="range" id="fontSlider" min="16" max="200" step="2" value="48" title="Font Size">
+      <select id="fontSize" onchange="changeTextSize()">
+        <option value="">🔠</option>
+        <option value="24px">S</option>
+        <option value="48px">M</option>
+        <option value="72px">L</option>
+        <option value="96px">XL</option>
+        <option value="144px">XXL</option>
+        <option value="200px">4XL</option>
+      </select>
+    </div>
+    <div class="right-controls">
+      <button onclick="togglePlay()">▶️/⏸️</button>
+      <button onclick="toggleFullscreen()">⛶</button>
+    </div>
   </div>
 
   <div id="script" contenteditable="true">Paste your teleprompter script here...</div>
 
   <script>
     const script = document.getElementById("script");
-    const fileInput = document.getElementById("fileInput");
     const speedSlider = document.getElementById("speedSlider");
     const fontSlider = document.getElementById("fontSlider");
+    const fontSizeSelect = document.getElementById("fontSize");
+
     let isPlaying = false;
-    let scrollSpeed = parseFloat(speedSlider.value);
     let scrollInterval;
-    let fontSize = parseInt(fontSlider.value);
-
-    // Load saved script
-    script.innerHTML = localStorage.getItem("teleprompterScript") || script.innerHTML;
-
-    script.addEventListener("input", () => {
-      localStorage.setItem("teleprompterScript", script.innerHTML);
-    });
-
-    function togglePlay() {
-      isPlaying = !isPlaying;
-      clearInterval(scrollInterval);
-      if (isPlaying) {
-        scrollInterval = setInterval(() => {
-          window.scrollBy(0, scrollSpeed);
-        }, 16);
-      }
-    }
-
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    }
-
-    function toggleMirror() {
-      script.style.transform = script.style.transform === "none" ? "scaleX(-1)" : "none";
-    }
-
-    function toggleEdit() {
-      script.contentEditable = script.isContentEditable ? "false" : "true";
-    }
 
     function saveScript() {
-      const blob = new Blob([script.innerHTML], { type: "text/html;charset=utf-8" });
+      const blob = new Blob([script.innerHTML], { type: "text/plain" });
       const link = document.createElement("a");
-      link.download = "teleprompter-script.html";
       link.href = URL.createObjectURL(blob);
+      link.download = "teleprompter-script.txt";
       link.click();
     }
 
-    function highlightSelection(className) {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
+    function loadFile(event) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        script.innerHTML = reader.result;
+        localStorage.setItem("teleprompterScript", reader.result);
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+
+    function toggleEditMode() {
+      script.contentEditable = script.isContentEditable ? "false" : "true";
+    }
+
+    function toggleMirror() {
+      script.style.transform = script.style.transform === "scaleX(-1)" ? "scaleX(1)" : "scaleX(-1)";
+    }
+
+    function highlightText(className) {
+      if (!className) return;
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
       const span = document.createElement("span");
-      span.className = className;
+      span.className = `highlight ${className}`;
       range.surroundContents(span);
-      script.focus();
     }
 
     function removeHighlight() {
-      const highlights = script.querySelectorAll("span[class^='highlight']");
-      highlights.forEach(span => {
-        const parent = span.parentNode;
-        while (span.firstChild) parent.insertBefore(span.firstChild, span);
-        parent.removeChild(span);
-      });
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const node = sel.anchorNode.parentNode;
+      if (node && node.className.includes("highlight")) {
+        const parent = node.parentNode;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        parent.removeChild(node);
+      }
     }
 
     function jumpToNextHighlight() {
-      const highlights = script.querySelectorAll("span[class^='highlight']");
-      const scrollY = window.scrollY;
-      for (let span of highlights) {
-        const top = span.getBoundingClientRect().top + window.scrollY;
-        if (top > scrollY + 10) {
-          window.scrollTo({ top: top - 80, behavior: 'smooth' });
+      const highlights = document.querySelectorAll(".highlight, .highlight-yellow, .highlight-green, .highlight-blue");
+      let currentScroll = window.scrollY;
+      for (let h of highlights) {
+        if (h.offsetTop > currentScroll + 50) {
+          window.scrollTo({ top: h.offsetTop - 100, behavior: "smooth" });
           break;
         }
       }
     }
 
-    function changeTextColor() {
-      const color = document.getElementById("fontColor").value;
-      document.execCommand("foreColor", false, color);
-    }
-
     function changeTextSize() {
-      const size = document.getElementById("fontSize").value;
-      document.execCommand("fontSize", false, "7");
-      const fontElements = script.querySelectorAll("font[size='7']");
-      fontElements.forEach(el => {
-        el.removeAttribute("size");
-        el.style.fontSize = size;
-      });
+      const size = fontSizeSelect.value;
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const span = document.createElement("span");
+      span.style.fontSize = size;
+      range.surroundContents(span);
     }
 
-    fileInput.addEventListener("change", (e) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        script.innerHTML = reader.result;
-        localStorage.setItem("teleprompterScript", script.innerHTML);
-      };
-      reader.readAsText(e.target.files[0]);
-    });
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        scrollInterval = setInterval(() => {
+          window.scrollBy(0, parseFloat(speedSlider.value));
+        }, 16);
+      } else {
+        clearInterval(scrollInterval);
+      }
+    }
+
+    function toggleFullscreen() {
+      const controls = document.getElementById("controls");
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          controls.classList.remove("hidden");
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          controls.classList.remove("hidden");
+        });
+      }
+    }
 
     speedSlider.addEventListener("input", () => {
-      scrollSpeed = parseFloat(speedSlider.value);
+      if (isPlaying) {
+        clearInterval(scrollInterval);
+        togglePlay();
+        togglePlay();
+      }
     });
 
     fontSlider.addEventListener("input", () => {
-      fontSize = parseInt(fontSlider.value);
-      script.style.fontSize = fontSize + "px";
+      script.style.fontSize = fontSlider.value + "px";
     });
 
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.shiftKey) {
-        if (e.key === "1") speedSlider.value = Math.max(0.5, parseFloat(speedSlider.value) - 0.5);
-        if (e.key === "2") speedSlider.value = Math.min(10, parseFloat(speedSlider.value) + 0.5);
-        if (e.key === "4") fontSlider.value = Math.max(16, parseInt(fontSlider.value) - 2);
-        if (e.key === "5") fontSlider.value = Math.min(96, parseInt(fontSlider.value) + 2);
-        scrollSpeed = parseFloat(speedSlider.value);
-        fontSize = parseInt(fontSlider.value);
-        script.style.fontSize = fontSize + "px";
-      }
+    // Save on input
+    script.addEventListener("input", () => {
+      localStorage.setItem("teleprompterScript", script.innerHTML);
     });
+
+    // Restore on load
+    window.onload = () => {
+      const saved = localStorage.getItem("teleprompterScript");
+      if (saved) {
+        script.innerHTML = saved;
+      }
+    };
   </script>
 </body>
 </html>
