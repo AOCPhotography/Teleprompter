@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Teleprompter</title>
+  <title>Teleprompter Pro</title>
   <style>
     body {
       background: black;
@@ -21,12 +21,13 @@
       padding: 4px 10px;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 4px;
       z-index: 9999;
     }
-    .control-button {
+    .control-button, select {
       height: 32px;
-      min-width: 90px;
+      min-width: 32px;
       font-size: 16px;
       background: #222;
       color: white;
@@ -38,7 +39,7 @@
       background: #444;
     }
     .slider {
-      width: 100px;
+      width: 80px;
       height: 20px;
     }
     #script {
@@ -47,11 +48,31 @@
       margin: auto;
       white-space: pre-wrap;
       outline: none;
-      transform: scaleX(-1); /* Mirror mode default */
+      transform: scaleX(-1);
     }
     input[type="file"] {
       height: 32px;
       font-size: 14px;
+    }
+    .highlight-grey {
+      background-color: #ccc;
+      color: black;
+    }
+    .highlight-yellow {
+      background-color: yellow;
+      color: black;
+    }
+    .highlight-blue {
+      background-color: lightblue;
+      color: black;
+    }
+    .highlight-green {
+      background-color: lightgreen;
+      color: black;
+    }
+    .highlight-red {
+      background-color: pink;
+      color: black;
     }
   </style>
 </head>
@@ -61,17 +82,37 @@
     <input type="file" id="fileInput" accept=".txt" />
     <button class="control-button" onclick="toggleEdit()">✏️</button>
     <button class="control-button" onclick="toggleMirror()">🔁</button>
-    <button class="control-button" onclick="highlightSelection()">🟨</button>
+    <button class="control-button" onclick="highlightSelection('highlight-grey')">⚫</button>
+    <button class="control-button" onclick="highlightSelection('highlight-yellow')">🟨</button>
+    <button class="control-button" onclick="highlightSelection('highlight-blue')">🔵</button>
+    <button class="control-button" onclick="highlightSelection('highlight-green')">🟢</button>
+    <button class="control-button" onclick="highlightSelection('highlight-red')">🔴</button>
     <button class="control-button" onclick="removeHighlight()">❌</button>
-    
-    <label style="color:white; font-size: 16px;">⏩</label>
+    <button class="control-button" onclick="jumpToNextHighlight()">⏩</button>
+
+    <select id="fontColor" onchange="changeTextColor()">
+      <option value="">🎨</option>
+      <option value="white">White</option>
+      <option value="black">Black</option>
+      <option value="red">Red</option>
+      <option value="yellow">Yellow</option>
+      <option value="blue">Blue</option>
+      <option value="green">Green</option>
+    </select>
+
+    <select id="fontSize" onchange="changeTextSize()">
+      <option value="">🔠</option>
+      <option value="24px">Small</option>
+      <option value="48px">Medium</option>
+      <option value="72px">Large</option>
+      <option value="96px">X-Large</option>
+    </select>
+
     <input class="slider" type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="2" />
-    
-    <label style="color:white; font-size: 16px;">🔠</label>
     <input class="slider" type="range" id="fontSlider" min="16" max="96" step="2" value="48" />
-    
+
     <div style="flex: 1;"></div>
-    
+
     <button class="control-button" onclick="togglePlay()">▶️/⏸️</button>
     <button class="control-button" onclick="toggleFullscreen()">⛶</button>
   </div>
@@ -89,11 +130,10 @@
     let fontSize = parseInt(fontSlider.value);
 
     // Load saved script
-    script.innerText = localStorage.getItem("teleprompterScript") || script.innerText;
+    script.innerHTML = localStorage.getItem("teleprompterScript") || script.innerHTML;
 
-    // Save on input
     script.addEventListener("input", () => {
-      localStorage.setItem("teleprompterScript", script.innerText);
+      localStorage.setItem("teleprompterScript", script.innerHTML);
     });
 
     function togglePlay() {
@@ -123,36 +163,64 @@
     }
 
     function saveScript() {
-      const blob = new Blob([script.innerText], { type: "text/plain;charset=utf-8" });
+      const blob = new Blob([script.innerHTML], { type: "text/html;charset=utf-8" });
       const link = document.createElement("a");
-      link.download = "teleprompter-script.txt";
+      link.download = "teleprompter-script.html";
       link.href = URL.createObjectURL(blob);
       link.click();
     }
 
-    function highlightSelection() {
+    function highlightSelection(className) {
       const selection = window.getSelection();
-      if (selection.rangeCount === 0) return;
+      if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
       const span = document.createElement("span");
-      span.style.backgroundColor = "yellow";
+      span.className = className;
       range.surroundContents(span);
+      script.focus();
     }
 
     function removeHighlight() {
-      const spans = script.querySelectorAll("span[style*='background-color']");
-      spans.forEach(span => {
+      const highlights = script.querySelectorAll("span[class^='highlight']");
+      highlights.forEach(span => {
         const parent = span.parentNode;
         while (span.firstChild) parent.insertBefore(span.firstChild, span);
         parent.removeChild(span);
       });
     }
 
+    function jumpToNextHighlight() {
+      const highlights = script.querySelectorAll("span[class^='highlight']");
+      const scrollY = window.scrollY;
+      for (let span of highlights) {
+        const top = span.getBoundingClientRect().top + window.scrollY;
+        if (top > scrollY + 10) {
+          window.scrollTo({ top: top - 80, behavior: 'smooth' });
+          break;
+        }
+      }
+    }
+
+    function changeTextColor() {
+      const color = document.getElementById("fontColor").value;
+      document.execCommand("foreColor", false, color);
+    }
+
+    function changeTextSize() {
+      const size = document.getElementById("fontSize").value;
+      document.execCommand("fontSize", false, "7");
+      const fontElements = script.querySelectorAll("font[size='7']");
+      fontElements.forEach(el => {
+        el.removeAttribute("size");
+        el.style.fontSize = size;
+      });
+    }
+
     fileInput.addEventListener("change", (e) => {
       const reader = new FileReader();
       reader.onload = () => {
-        script.innerText = reader.result;
-        localStorage.setItem("teleprompterScript", script.innerText);
+        script.innerHTML = reader.result;
+        localStorage.setItem("teleprompterScript", script.innerHTML);
       };
       reader.readAsText(e.target.files[0]);
     });
