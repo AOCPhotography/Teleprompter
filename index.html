@@ -18,36 +18,31 @@
       left: 0;
       width: 100%;
       background: rgba(0, 0, 0, 0.85);
-      padding: 5px;
+      padding: 4px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      align-items: center;
       justify-content: center;
+      gap: 6px;
       z-index: 9999;
+      flex-wrap: wrap;
     }
     #script {
-      padding: 140px 80px 60px 80px;
+      padding: 120px 80px 60px 80px;
       max-width: 1000px;
       margin: auto;
       white-space: pre-wrap;
       outline: none;
-      transform: scaleX(-1);
-    }
-    .hidden {
-      display: none !important;
+      transform: scaleX(-1); /* Mirror mode */
     }
     button, input[type=range] {
       font-size: 10px;
-      padding: 4px 6px;
+      padding: 2px 6px;
       background-color: #333;
       color: white;
       border: none;
       border-radius: 3px;
       cursor: pointer;
-      height: 24px;
     }
-    button:hover {
+    button:hover, input[type=range]:hover {
       background-color: #555;
     }
     input[type=range] {
@@ -60,30 +55,35 @@
     <button onclick="togglePlay()">▶️ / ⏸️</button>
     <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
     <button onclick="toggleMirror()">🪞 Toggle Mirror</button>
-    <button onclick="clearScript()">🧹 Clear</button>
+    <button onclick="toggleEditMode()">✏️ Edit Mode</button>
+    <input type="file" id="fileInput" />
     <button onclick="saveScript()">💾 Save</button>
-    <input type="file" accept=".txt" onchange="loadFile(event)" />
     <label>Speed <input type="range" min="0.5" max="10" step="0.5" value="2" id="speedSlider"></label>
-    <label>Font <input type="range" min="12" max="100" step="2" value="48" id="fontSlider"></label>
+    <label>Font <input type="range" min="12" max="96" step="4" value="48" id="fontSlider"></label>
   </div>
 
   <div id="script" contenteditable="true">Paste your teleprompter script here...</div>
 
   <script>
     const script = document.getElementById("script");
-    const controls = document.getElementById("controls");
     const speedSlider = document.getElementById("speedSlider");
     const fontSlider = document.getElementById("fontSlider");
     let isPlaying = false;
-    let scrollSpeed = parseFloat(speedSlider.value);
-    let fontSize = parseInt(fontSlider.value);
     let scrollInterval;
+
+    // Load script from localStorage
+    script.innerText = localStorage.getItem('teleprompterScript') || script.innerText;
+
+    // Save script content on input
+    script.addEventListener('input', () => {
+      localStorage.setItem('teleprompterScript', script.innerText);
+    });
 
     function togglePlay() {
       isPlaying = !isPlaying;
       if (isPlaying) {
         scrollInterval = setInterval(() => {
-          window.scrollBy(0, scrollSpeed);
+          window.scrollBy(0, parseFloat(speedSlider.value));
         }, 16);
       } else {
         clearInterval(scrollInterval);
@@ -91,93 +91,81 @@
     }
 
     function toggleFullscreen() {
-      const isFull = !!document.fullscreenElement;
-      if (!isFull) {
-        document.documentElement.requestFullscreen().then(() => {
-          controls.classList.add("hidden");
-        });
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
       } else {
-        document.exitFullscreen().then(() => {
-          controls.classList.remove("hidden");
-        });
+        document.exitFullscreen();
       }
     }
 
     function toggleMirror() {
-      script.style.transform = script.style.transform === "scaleX(-1)" ? "scaleX(1)" : "scaleX(-1)";
+      script.style.transform = script.style.transform === 'scaleX(-1)' ? 'scaleX(1)' : 'scaleX(-1)';
     }
 
-    function clearScript() {
-      if (confirm("Are you sure you want to clear the script?")) {
-        script.innerText = "";
-        localStorage.removeItem("teleprompterScript");
-      }
+    function toggleEditMode() {
+      script.contentEditable = script.isContentEditable ? "false" : "true";
     }
 
-    function saveScript() {
-      const blob = new Blob([script.innerText], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'teleprompter-script.txt';
-      a.click();
-    }
-
-    function loadFile(event) {
+    document.getElementById('fileInput').addEventListener('change', (e) => {
       const reader = new FileReader();
       reader.onload = function () {
         script.innerText = reader.result;
-        localStorage.setItem("teleprompterScript", reader.result);
+        localStorage.setItem('teleprompterScript', reader.result);
       };
-      reader.readAsText(event.target.files[0]);
+      reader.readAsText(e.target.files[0]);
+    });
+
+    function saveScript() {
+      const blob = new Blob([script.innerText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'teleprompter-script.txt';
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
-    // Keyboard shortcuts
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "1") {
-        scrollSpeed = Math.max(0.5, scrollSpeed - 0.5);
-        speedSlider.value = scrollSpeed;
-      } else if (e.ctrlKey && e.shiftKey && e.key === "2") {
-        scrollSpeed = Math.min(10, scrollSpeed + 0.5);
-        speedSlider.value = scrollSpeed;
-      } else if (e.ctrlKey && e.shiftKey && e.key === "4") {
-        fontSize = Math.max(12, fontSize - 4);
-        fontSlider.value = fontSize;
-        script.style.fontSize = fontSize + "px";
-      } else if (e.ctrlKey && e.shiftKey && e.key === "5") {
-        fontSize = Math.min(100, fontSize + 4);
-        fontSlider.value = fontSize;
-        script.style.fontSize = fontSize + "px";
-      } else if (e.key === "ArrowDown") {
-        window.scrollBy(0, fontSize);
-      } else if (e.key === "ArrowUp") {
-        window.scrollBy(0, -fontSize);
-      } else if (e.key === " ") {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.key.toLowerCase() === "f") {
-        toggleFullscreen();
+    speedSlider.addEventListener('input', () => {
+      if (isPlaying) {
+        clearInterval(scrollInterval);
+        scrollInterval = setInterval(() => {
+          window.scrollBy(0, parseFloat(speedSlider.value));
+        }, 16);
       }
     });
 
-    // Sync sliders
-    speedSlider.addEventListener("input", (e) => {
-      scrollSpeed = parseFloat(e.target.value);
+    fontSlider.addEventListener('input', () => {
+      script.style.fontSize = fontSlider.value + "px";
     });
 
-    fontSlider.addEventListener("input", (e) => {
-      fontSize = parseInt(e.target.value);
-      script.style.fontSize = fontSize + "px";
-    });
-
-    // Load script from localStorage
-    window.addEventListener("load", () => {
-      const saved = localStorage.getItem("teleprompterScript");
-      if (saved) script.innerText = saved;
-    });
-
-    // Save on change
-    script.addEventListener("input", () => {
-      localStorage.setItem("teleprompterScript", script.innerText);
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.shiftKey) {
+        switch (e.key) {
+          case "1":
+            speedSlider.value = Math.max(0.5, parseFloat(speedSlider.value) - 0.5);
+            break;
+          case "2":
+            speedSlider.value = Math.min(10, parseFloat(speedSlider.value) + 0.5);
+            break;
+          case "4":
+            fontSlider.value = Math.max(12, parseInt(fontSlider.value) - 4);
+            script.style.fontSize = fontSlider.value + "px";
+            break;
+          case "5":
+            fontSlider.value = Math.min(96, parseInt(fontSlider.value) + 4);
+            script.style.fontSize = fontSlider.value + "px";
+            break;
+        }
+      } else if (e.key === " ") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "ArrowDown") {
+        window.scrollBy(0, parseInt(fontSlider.value));
+      } else if (e.key === "ArrowUp") {
+        window.scrollBy(0, -parseInt(fontSlider.value));
+      } else if (e.key.toLowerCase() === "f") {
+        toggleFullscreen();
+      }
     });
   </script>
 </body>
